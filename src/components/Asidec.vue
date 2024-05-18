@@ -88,16 +88,16 @@
       />
     </el-select>
     <el-select
-      v-model="value2"
+      v-model="chatnewStore.promptuid"
       placeholder="提示词"
       size="small"
       style="width:50%;margin-left:20px;"
     >
       <el-option
         v-for="item in options2"
-        :key="item.value"
-        :label="item.label"
-        :value="item.value"
+        :key="item.id"
+        :label="item.name"
+        :value="item.id"
       />
     </el-select>
   </div>
@@ -105,8 +105,8 @@
   <div style="height:50px;border-top:1px solid var(--el-border-color);
   display: flex;align-items: center;">
     <el-select
-      v-model="value3"
-      placeholder="知识库"
+      v-model="chatnewStore.ragid"
+      placeholder="RAG使用"
       size="small"
       style="width:50%;margin-left:10px;"
     >
@@ -163,35 +163,18 @@ const options1 = [
 
 
 ]
-const options2 = [
-  {
-    value: 1,
-    label: '英语助手',
-  },
-  {
-    value: 2,
-    label: '数学建模比赛',
-  },
-  {
-    value: 0,
-    label: '提示词',
-  }
-
-]
 const options3 = [
   {
     value: 1,
-    label: 'rag技术',
-  },
-  {
-    value: 2,
-    label: '厦门',
+    label: 'RAG启用',
   },
   {
     value: 0,
-    label: '知识库',
+    label: 'RAG禁用',
   }
 ]
+
+const options2 = ref([])
 
 
 
@@ -221,6 +204,25 @@ const createNewChat = async () => {
     load();
 
 }
+
+const loadfirst = async () => {
+  try {
+    const response = await request.get("/userPrompt/" + userStore.user + "/1");
+    console.log(response.data);
+    // 确保响应数据是一个数组
+    if (Array.isArray(response.data)) {
+      options2.value = response.data;
+    } else {
+      // 如果响应数据不是数组，您可以处理这种情况
+      console.error('Expected an array but got:', response.data);
+    }
+    // 添加新对象到数组中
+    options2.value.push({ id: 0, name: "提示词" });
+  } catch (error) {
+    console.error('Error fetching user prompts:', error);
+  }
+};
+
 
 // const chatIds = ref<string[]>([]);
 
@@ -271,6 +273,7 @@ const load = async() => {
 
 onMounted(() => {
   load();
+  loadfirst();
 });
 
 const switchChat = async (chatid) => {

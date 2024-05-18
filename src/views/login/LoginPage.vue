@@ -80,10 +80,19 @@ const login = async () => {
   try{
   console.log('发送前',formModel.value)
   const res = await request.post('/user/login',formModel.value)
-  console.log('发送后',res)
+  // console.log('发送后',res)
   userStore.getUser(res.data.id)
   ElMessage.success('登录成功')
-  router.push('/')
+
+  const res2 = await request.get('/user/'+userStore.user)
+  console.log('发送后',res2)
+  userStore.manager = res2.data.type
+
+  if(res2.data.type === 0)
+    await router.push('/manage')
+
+  if(res2.data.type === 1)
+    await router.push('/layout/chat')
  
   }
   catch(error) {

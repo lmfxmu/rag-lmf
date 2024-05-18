@@ -21,18 +21,14 @@
     <div style="width: 100px">
       <el-dropdown style="margin: 10px; margin-top: 20px">
         <span class="el-dropdown-link">
-          用户名
+          用户
           <el-icon class="el-icon--right">
             <Arrow-down />
           </el-icon>
         </span>
         <template #dropdown>
           <el-dropdown-menu>
-            <el-dropdown-item>Action 1</el-dropdown-item>
-            <el-dropdown-item>Action 2</el-dropdown-item>
-            <el-dropdown-item>Action 3</el-dropdown-item>
-            <el-dropdown-item disabled>Action 4</el-dropdown-item>
-            <el-dropdown-item divided>Action 5</el-dropdown-item>
+            <el-dropdown-item @click="userStore.setUser()">退出登录</el-dropdown-item>
           </el-dropdown-menu>
         </template>
       </el-dropdown>
@@ -57,4 +53,7 @@ export default {
 <script setup>
 import { ElMessage } from 'element-plus'
 import { ArrowDown } from '@element-plus/icons-vue'
+import { useUserStore } from '@/stores'
+
+const userStore = useUserStore()
 </script>

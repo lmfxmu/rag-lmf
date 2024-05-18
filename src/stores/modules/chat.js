@@ -7,6 +7,8 @@ export const useChatnewStore = defineStore(
   'chatnew',
   () => {
     const token = ref('')
+    const promptuid = ref(0)
+    const ragid = ref(0)
     const chatList = ref([])
 
     const activeChatId = ref(Number())
@@ -23,7 +25,9 @@ export const useChatnewStore = defineStore(
       activeChatId,
       messageList,
       intro,
-      getactiveChatId
+      getactiveChatId,
+      promptuid,
+      ragid
     }
   },
   {

@@ -7,15 +7,14 @@
     </el-breadcrumb>
 
     <div style="margin-left:2%;margin-top:20px;">
-      <el-button type="primary" @click="add">新增</el-button>
+      <el-button type="primary" @click="add()">新增</el-button>
       <el-input clearable v-model="search" placeholder="请输入用户id" style="width:20%;margin-left:10px;"></el-input>
       <el-button type="primary" style="margin-left:10px;" @click="load()">查询</el-button>
     </div>
-    <el-table :data="tableData" border stripe style="width: 96%;margin-left:2%;margin-top:20px;">
+    <el-table :data="tableData" border stripe style="width: 96%;margin-left:2%;margin-top:20px;" max-height="500">
       <el-table-column prop="id" label="用户ID" sortable />
       <el-table-column prop="name" label="用户名" />
       <el-table-column prop="password" label="密码" />
-      <el-table-column prop="status" label="状态" />
       <el-table-column prop="type" label="权限" />
       <el-table-column prop="token" label="token" />
       <el-table-column fixed="right" label="操作" width="140">
@@ -42,9 +41,6 @@
           <el-form-item label="密码">
             <el-input v-model="form.password" style="width:80%;"></el-input>
           </el-form-item>
-          <el-form-item label="状态">
-            <el-input v-model="form.status" style="width:80%;"></el-input>
-          </el-form-item>
           <el-form-item label="权限">
             <el-radio v-model="form.type" :label = 0 >管理员</el-radio>
             <el-radio v-model="form.type" :label = 1>用户</el-radio>
@@ -67,7 +63,7 @@
 
 <script>
 import { request } from '@/utils/request';
-
+import { ElMessage } from 'element-plus'
 
 
 export default {
@@ -78,8 +74,8 @@ export default {
   data() {
     return {
       form: {
+        id: null,
         type: 0 || 1,
-        status: 0 || 1,
         name: "",
         password: "",
         token: ""
@@ -97,66 +93,75 @@ export default {
     this.load();
   },
   methods: {
-    load() {
+    async load() {
       console.log(this.search);
       if (this.search === '')
       {
-        request.get("/userList", {
+        try{
+        await request.get("/userList", {
       }).then(res => {
         this.tableData = res.data;
       })
+      }
+        catch(error) {
+          ElMessage.error(error.response.data.errMsg)
+        }
 
       }
       else {
       const num1 = parseFloat(this.search);
       console.log(num1);
       if(!isNaN(num1))
-      { request.get("/user/"+num1, {
+      { 
+        try{
+        await  request.get("/user/"+num1, {
       }).then(res => {
         console.log(res.data);
         const data1 = [res.data];
         console.log(this.tableData)
         this.tableData = data1;
         console.log(this.tableData)
-      }) }
-      else { this.tableData = []}
+        ElMessage.success("查询成功")
+      }) 
+        }
+        catch(error) {
+          ElMessage.error(error.response.data.errMsg)
+        }
+    
+      }
+      else { this.tableData = []
+        ElMessage.error("查询失败");
+      }
       }
     },
     add() {
       this.dialogVisible = true;
       this.form = {};
     },
-    save() {
+    async save() {
       console.log(this.form);
-      if (this.form.id != '') {
+      if (this.form.id != null) {
         console.log(this.form);
-        request.put("/user", this.form).then(res => {
-          if (res.code == 'CREATED') {
-            this.$message({
-              type: "success",
-              message: "更新成功"
-            });
-          } else {
-            this.$message({
-              type: "error",
-              message: res.errmsg
-            });
+        try{
+        await request.put("/user", this.form)
+        ElMessage.success("修改成功")
+        this.load();
+        }
+        catch(error) {
+            ElMessage.error(error.response.data.errMsg)
           }
-        },this.load())
-      } else {
-        request.post("/user/new", this.form).then(res => {
-          if (res.code == 'CREATED') {
-            this.$message({
-              type: "success",
-              message: "新增成功"
-            });
-          } else {
-            this.$message({
-              type: "error",
-              message: res.errmsg
-            });
-          }
-        })
+        }
+       else {
+
+        try{
+        await request.post("/user/new", this.form)
+        ElMessage.success("创建成功")
+        }
+        catch(error) {
+          ElMessage.error(error.response.data.errMsg)
+        }
+
+
       }
       this.dialogVisible = false;
       this.load();
@@ -174,31 +179,28 @@ export default {
     //   //this.currentPage = pageNum; 同上
     //   this.load();
     // },
-    handleDelete(data) {
+    async handleDelete(data) {
       
       // 创建一个新对象，该对象是data对象的深拷贝
      const userData = JSON.parse(JSON.stringify(data));
 
       // 使用delete操作符删除id属性
-      delete userData.id;
+      // delete userData.id;
 
       console.log(data);
       console.log(userData);
-      request.delete("/user",{data: userData}).then(res => {
-        console.log(res);
-        if (res.code == 'OK') {
-            this.$message({
-              type: "success",
-              message: "删除成功"
-            });
-          } else {
-            this.$message({
-              type: "error",
-              message: res.errmsg
-            });
-          }
-      })
-      this.load();
+      
+
+      try{
+        await request.delete("/user",{data: userData})
+        ElMessage.success("删除成功")
+        this.load();
+        }
+        catch(error) {
+          ElMessage.error(error.response.data.errMsg)
+        }
+
+      // this.load();
     }
   }
 }

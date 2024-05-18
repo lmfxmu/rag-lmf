@@ -2,36 +2,8 @@
   <el-watermark :font="font" :content="['RAG-powered AI Service']" >
   <el-container class="chat-zhuti">
     <div class="chat-main">
-      <div class="chat-list" ref="chatListDom" >
-        <!-- <div v-if=" chatnewStore.intro " class="introduction">
-          <el-row>
-          <el-col :span="8" justify="center">
-            <el-row justify="center" class='icon1'>
-              <el-icon size=30><Flag /></el-icon></el-row>
-              <el-row justify="center" class='span1'>疑难解答</el-row>
-              <el-row><div class="int1">{{question1}}</div></el-row>
-              <el-row><div class="int1">{{question2}}</div></el-row>
-              <el-row><div class="int1">{{question3}}</div></el-row>
-            </el-col>
-            <el-col :span="8" justify="center">
-              <el-row justify="center" class='icon2'><el-icon size=30><Document /></el-icon></el-row>
-              <el-row justify="center" class='span2'>问题资讯</el-row>
-              <el-row><div class="int2">{{question4}}</div></el-row>
-              <el-row><div class="int2">{{question5}}</div></el-row>
-              <el-row><div class="int2">{{question6}}</div></el-row>
-            </el-col>
-            <el-col :span="8" justify="center">
-              <el-row justify="center" class='icon3'><el-icon size=30><Fire /></el-icon></el-row>
-              <el-row justify="center" class='span3'>创意灵感</el-row>
-              <el-row><div class="int3">{{question7}}</div></el-row>
-              <el-row><div class="int3">{{question8}}</div></el-row>
-              <el-row><div class="int3">{{question9}}</div></el-row>
-            </el-col>
-          </el-row>
-
-        </div> -->
-         
-          <div v-for="item in messageList"  :key="item.content">
+      <div class="chat-list" ref="chatListDom" > 
+          <div v-for="item in chatnewStore.messageList.value"  :key="item.content">
           <div 
           v-if="item.role != 2"
           class="chat-role">
@@ -115,6 +87,7 @@ import cryptoJS from "crypto-js";
 import Loding from "@/components/Loding.vue";
 import Copy from "@/components/Copy.vue";
 import { md } from "@/libs/markdown";
+import { useUserStore } from '@/stores'
 
 import { Search,Top } from '@element-plus/icons-vue'
 
@@ -133,27 +106,6 @@ const font = reactive({
   fontSize:16,
 })
 
-const question1='如何使用 Python 编写一个能够计算斐波那契数列的函数？'
-const question2= '如何在家庭生活中平衡工作和个人需求？'
-const question3= '解释一下人工智能的发展历程和应用领域。'
-const question4= '如何通过设计和布局改善网页的用户体验？'
-const question5= '解释一下区块链技术的工作原理和它对金融行业的影响。'
-const question6= '科技创新对环境保护有哪些积极的影响？'
-const question7= '如何通过设计和布局改善网页的用户体验？'
-const question8= '如何获得绘画作品创作灵感？'
-const question9= '如何在团队合作中有效沟通和解决冲突？'
-
-// watch(
-//   isDark,
-//   () => {
-//     font.color = isDark.value
-//       ? 'rgba(255, 255, 255, .15)'
-//       : 'rgba(0, 0, 0, .15)'
-//   },
-//   {
-//     immediate: true,
-//   }
-// )
 
 
 
@@ -177,7 +129,7 @@ const decoder = new TextDecoder("utf-8");
 const roleAlias = { user: "ME", assistant: "ChatGPT", system: "System" };
 //身份设置
 
-
+const userStore = useUserStore()
 
 const messageList=[
 
@@ -248,22 +200,23 @@ const sendgpt = async() => {
     const myform ={
       role: 2,
       content: messageContent.value,
-      chatId: chatnewStore.activeChatId
     }
-    console.log(myform);
 
+    const num2= parseFloat(userStore.user);
     const form2 ={
+      userId: num2,
       role: 2,
       content: messageContent.value
     }
 
     chatnewStore.messageList.value.push(form2)
-    await request.post("/message",myform).then(res => {
+    // console.log("myform",myform)
+    await request.post("/txt2pic",form2).then(res => {
         console.log(res.data);
         ElMessage.success('发送成功');
         const form2 ={
         role: 1,
-        content: res.data.content
+        content: res.data.data[0].url
         }
         chatnewStore.messageList.value.push(form2)
       })
@@ -276,6 +229,29 @@ const sendgpt = async() => {
   //谈话
 };
 
+
+
+
+onMounted(() => {
+  switchChat();
+});
+
+const switchChat = async () => {
+      try{
+        await request.get("/txt2pic/"+userStore.user).then(res => {
+        // const chatidin = chatid.value;
+        chatnewStore.messageList.value = res.data;
+        // console.log('chatid为',chatid,'仓库里的为',chatnewStore.activeChatId);
+        //仓库的数字竟然不用.value??  这个bug找了估计有一个多小时
+  
+      })
+    }
+    catch(error)
+    {
+      chatnewStore.intro=1;
+      ElMessage.error(error.response.data.errMsg)
+    }
+}
 
 
 const scrollToBottom = () => {

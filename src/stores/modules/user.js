@@ -16,6 +16,7 @@ export const useUserStore = defineStore(
     }
 
     const user = ref('')
+    const manager = ref(1)
     const getUser  = (newToken) => {
       user.value = newToken
     }
@@ -33,6 +34,7 @@ export const useUserStore = defineStore(
       setToken,
       removeToken,
       user,
+      manager,
       getUser,
       setUser
     }

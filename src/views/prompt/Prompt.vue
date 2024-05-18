@@ -12,22 +12,22 @@
       <el-button type="primary" style="margin-left:40px;" @click="load()" plain>查询全部</el-button>
       <el-button type="primary" style="margin-left:40px;" @click="loadidid()" >指定查询</el-button>
     </div>
-    <el-table :data="tableData" border stripe style="width: 96%;margin-left:2%;margin-top:20px;">
+    <el-table :data="tableData" border stripe style="width: 96%;margin-left:2%;margin-top:20px;" max-height="500">
       <el-table-column prop="id" label="id" sortable  width="70" />
       <el-table-column prop="name" label="标题" width="100"/>
       <el-table-column prop="code" label="编号" width="70" />
       <el-table-column prop="status" label="状态" width="70"/>
-      <el-table-column prop="systemPrompt" label="系统提示词">
-        <template #default="scope">
-        <span v-if="scope.row.systemPrompt.length > 50">{{ scope.row.systemPrompt.substring(0, 50) }}...</span>
-        <span v-else>{{ scope.row.systemPrompt }}</span>
+      <el-table-column prop="systemPrompt" label="系统提示词" width="250">
+        <template #default="scope1">
+        <span v-if="scope1.row.systemPrompt && scope1.row.systemPrompt.length > 50">{{ scope1.row.systemPrompt.substring(0, 50) }}...</span>
+        <span v-else>{{ scope1.row.systemPrompt }}</span>
       </template>
         </el-table-column>
       <el-table-column prop="userPrompt" label="用户提示词" width="120" />
       <el-table-column prop="modelId" label="模型id" width="70" />
       <el-table-column prop="userId" label="用户id" width="70"/>
       <el-table-column prop="gmtCreate" label="创建时间" width="120"/>
-      <el-table-column prop="gmtModified" label="修改时间" width="120" />
+      <el-table-column prop="gmtModified" label="修改时间" />
       <el-table-column fixed="right" label="操作" width="150">
         <template #default="scope">
           <el-row>
@@ -64,10 +64,10 @@
           <el-form-item label="用户提示词">
             <el-input v-model="form.userPrompt" type="textarea" style="width:80%;" autosize></el-input>
           </el-form-item>
-          <el-form-item label="模型id">
+          <el-form-item label="模型id(必填)">
             <el-input v-model="form.modelId" style="width:80%;"></el-input>
           </el-form-item>
-          <el-form-item label="用户id">
+          <el-form-item label="用户id(必填)">
             <el-input v-model="form.userId" style="width:80%;"></el-input>
           </el-form-item>
           <!-- <el-form-item label="权限">
@@ -99,7 +99,7 @@
         </el-form>
         <template #footer>
           <span class="dialog-footer">
-            <el-button @click="dialogVisible = false">取消</el-button>
+            <el-button @click="getvisible = false">取消</el-button>
             <el-button type="primary" @click="save1()">确定</el-button>
           </span>
         </template>
@@ -138,25 +138,26 @@ export default {
     this.load();
   },
   methods: {
-    loadid() {
+    async loadid() {
       console.log(this.search);
       if (this.search === '')
       {
-        ElMessage.error('请输入查询id')
+        // ElMessage.error('请输入查询id');
+        this.load();
       }
       else 
       {
         const num1 = parseFloat(this.search);
         if(!isNaN(num1)){
         try{
-          request.get("/prompt/"+num1).then(res => {
+        await request.get("/prompt/"+num1).then(res => {
         console.log(res.data);
         const data1 = [res.data];
         console.log(this.tableData)
         this.tableData = data1;
         console.log(this.tableData)
-      })
-
+        })
+        // this.load();
         }
         catch(error) {
           ElMessage.error(error.response.data.errMsg)
@@ -170,12 +171,17 @@ export default {
 
       
     },
-    load() {
-      request.get("/prompt/0/0/*", {
+    async load() {
+      try{
+      await request.get("/prompt/0/0/*", {
       }).then(res => {
         console.log(res.data);
         this.tableData = res.data;
       })
+      }
+      catch(error) {
+            ElMessage.error(error.response.data.errMsg)
+      }
     },
     loadidid() {
       this.getvisible = true;
@@ -186,11 +192,11 @@ export default {
 
      
     },
-    save1(){
+    async save1(){
       
       try{
         console.log(this.form);
-        request.get("/prompt/"+this.form.userId+'/'+this.form.modelId+'/'+this.form.code).then(res => {
+        await request.get("/prompt/"+this.form.userId+'/'+this.form.modelId+'/'+this.form.code).then(res => {
           console.log(res.data);
         this.tableData = res.data;
       })
@@ -198,6 +204,7 @@ export default {
       catch(error) {
             ElMessage.error(error.response.data.errMsg)
       }
+      this.load();
       this.getvisible = false;
     }
     ,
@@ -206,22 +213,22 @@ export default {
       this.createp = 1;
       this.form = {};
     },
-    save() {
+    async save() {
       // console.log(this.form);
       if (this.createp === 1) {
         console.log(this.form);
         try{
-        request.post("/prompt", this.form)
+        await request.post("/prompt", this.form)
         }
           catch(error) {
             ElMessage.error(error.response.data.errMsg)
           }
-        // this.load();
+        this.load();
       } 
       else {
         try{
           console.log('修改前',this.form);
-        request.put("/prompt", this.form)
+        await request.put("/prompt", this.form)
         }
         catch(error)
         {
@@ -257,6 +264,7 @@ export default {
         {
           ElMessage.error(error.response.data.errMsg)
         }
+        this.load();
 
   },
   open1(data)
@@ -268,6 +276,7 @@ export default {
         {
           ElMessage.error(error.response.data.errMsg)
         }
+        this.load();
   },
   close1(data)
   {
@@ -279,6 +288,7 @@ export default {
         {
           ElMessage.error(error.response.data.errMsg)
         }
+        this.load();
   }
 }
 }

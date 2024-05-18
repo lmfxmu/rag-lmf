@@ -14,7 +14,7 @@
       <!-- <el-table-column prop="status" label="状态" width="70"/> -->
       <el-table-column prop="systemPrompt" label="系统提示词" >
         <template #default="scope">
-        <span v-if="scope.row.systemPrompt.length > 50">{{ scope.row.systemPrompt.substring(0, 50) }}...</span>
+        <span v-if="scope.row.systemPrompt &&scope.row.systemPrompt.length > 50">{{ scope.row.systemPrompt.substring(0, 50) }}...</span>
         <span v-else>{{ scope.row.systemPrompt }}</span>
       </template>
         </el-table-column>
@@ -58,9 +58,9 @@
           <el-form-item label="模型id">
             <el-input v-model="form.modelId" style="width:80%;"></el-input>
           </el-form-item>
-          <el-form-item label="用户id">
+          <!-- <el-form-item label="用户id">
             <el-input v-model="form.userId" style="width:80%;"></el-input>
-          </el-form-item>
+          </el-form-item> -->
           <!-- <el-form-item label="权限">
             <el-radio v-model="form.type" :label = 0 >管理员</el-radio>
             <el-radio v-model="form.type" :label = 1>用户</el-radio>
@@ -103,7 +103,7 @@
 <script>
 import { request } from '@/utils/request';
 import { ElMessage } from 'element-plus'
-
+import { useUserStore } from '@/stores'
 
 export default {
   name: 'Prompt',
@@ -119,6 +119,7 @@ export default {
       dialogVisible: false,
       getvisible: false,
       search: '',
+      userStore: null,
       tableData: [],
       ElMessage,
       createp: 0
@@ -126,70 +127,18 @@ export default {
     }
   },
   created() {
+    this.userStore = useUserStore(); // 在 created 钩子中赋值
     this.load();
+    console.log("userstore",this.userStore.user)
   },
   methods: {
-    loadid() {
-      console.log(this.search);
-      if (this.search === '')
-      {
-        ElMessage.error('请输入查询id')
-      }
-      else 
-      {
-        const num1 = parseFloat(this.search);
-        if(!isNaN(num1)){
-        try{
-          request.get("/prompt/"+num1).then(res => {
-        console.log(res.data);
-        const data1 = [res.data];
-        console.log(this.tableData)
-        this.tableData = data1;
-        console.log(this.tableData)
-      })
-
-        }
-        catch(error) {
-          ElMessage.error(error.response.data.errMsg)
-        }
-      }
-      else { 
-        this.tableData = []
-        ElMessage.error('请输入数字')
-      }
-      }
-
-      
-    },
-    load() {
-      request.get("/prompt/0/0/*", {
+   
+    async load() {
+      await request.get("/prompt/"+this.userStore.user+"/0/*", {
       }).then(res => {
         console.log(res.data);
         this.tableData = res.data;
       })
-    },
-    loadidid() {
-      this.getvisible = true;
-      this.form = {};
-      this.form.userId=0;
-      this.form.modelId=0;
-      this.form.code='*';
-
-     
-    },
-    save1(){
-      
-      try{
-        console.log(this.form);
-        request.get("/prompt/"+this.form.userId+'/'+this.form.modelId+'/'+this.form.code).then(res => {
-          console.log(res.data);
-        this.tableData = res.data;
-      })
-    }
-      catch(error) {
-            ElMessage.error(error.response.data.errMsg)
-      }
-      this.getvisible = false;
     }
     ,
     add() {
@@ -197,26 +146,32 @@ export default {
       this.createp = 1;
       this.form = {};
     },
-    save() {
+    async save() {
       // console.log(this.form);
       if (this.createp === 1) {
-        console.log(this.form);
+        // console.log(this.form);
         try{
-        request.post("/prompt", this.form)
+          const num1 = parseFloat(this.userStore.user);
+          this.form.userId = num1
+          await request.post("/prompt", this.form)
+          ElMessage.success('添加成功')
         }
           catch(error) {
             ElMessage.error(error.response.data.errMsg)
+            ElMessage.error('添加失败')
           }
         // this.load();
       } 
       else {
         try{
           console.log('修改前',this.form);
-        request.put("/prompt", this.form)
+          await request.put("/prompt", this.form)
+          ElMessage.success('修改成功')
         }
         catch(error)
         {
           ElMessage.error(error.response.data.errMsg)
+          ElMessage.error('修改失败')
         }
         }
       this.dialogVisible = false;
@@ -226,45 +181,27 @@ export default {
       
     
   ,
-    handleEdit(row) {
+  handleEdit(row) {
       //深拷贝，为了防止更改了本地变量里面的form
       console.log('测试');
       this.form = JSON.parse(JSON.stringify(row));
       this.dialogVisible = true;
     },
 
-    handleDelete(data) {
+    async  handleDelete(data) {
       
       try{
           // console.log('修改前',this.form);
-        request.delete("/prompt/"+data.id)
+        await request.delete("/prompt/"+data.id)
+        ElMessage.success('删除成功')
         }
         catch(error)
         {
           ElMessage.error(error.response.data.errMsg)
+          ElMessage.error('删除失败')
         }
-
-  },
-  open1(data)
-  {
-    try{
-        request.put("/prompt/"+data.id+'/'+1)
-        }
-        catch(error)
-        {
-          ElMessage.error(error.response.data.errMsg)
-        }
-  },
-  close1(data)
-  {
-    try{
-      console.log('修改前',data);
-        request.put("/prompt/"+data.id+'/'+0)
-        }
-        catch(error)
-        {
-          ElMessage.error(error.response.data.errMsg)
-        }
+        this.load();
+       
   }
 }
 }

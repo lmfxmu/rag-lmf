@@ -94,7 +94,7 @@
           />
           <div style="width: 50px;"></div>
           <!-- <el-button :disabled="isTalking" @click="sendgpt()"> -->
-            <el-button :disabled="isTalking" type="primary" plain
+            <el-button :disabled="isTalking"  type="primary" plain
             style="margin-right:10px;font-size:18px;height:35px;"
             @click="sendgpt()" 
             >
@@ -116,6 +116,8 @@ import type { ChatMessage } from "@/types";
 //限制类型
 import { ref, watch, nextTick, onMounted, toRef,toRefs } from "vue";
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElLoading } from 'element-plus'
+
 import { chat } from "@/libs/gpt";
 
 import cryptoJS from "crypto-js";
@@ -133,7 +135,9 @@ import { storeToRefs } from 'pinia'
 import { useChatnewStore } from '@/stores/modules/chat'
 import { reactive} from 'vue'
 // import { isDark } from '~/composables/dark'
+import { useUserStore } from '@/stores'
 
+const userStore = useUserStore()
 
 const font = reactive({
   color: 'rgba(0, 0, 0, .10)',
@@ -217,12 +221,28 @@ onMounted(() => {
 });
 
 
+const sendgpt1 = async() => {
+  console.log(chatnewStore.promptuid,"pormoptid")
+  try {
+    const res = await request.get("/prompt/" + chatnewStore.promptuid);
+    console.log('test',res.data.systemPrompt)
+  } catch (error) {
+    console.error('Error fetching user prompts:', error.response.data.errMsg);
+  }
+}
+
+
 const sendgpt = async() => {
   if (!messageContent.value.length) 
   {
     ElMessage.error('请输入文本');
     return;
   }
+  const target = document.querySelector('.chat-input');
+  const loadingInstance = ElLoading.service({
+    target: target,
+    text: '正在等待聊天问答...'
+  });
   //无文本不操作
   try {
     isTalking.value = true;
@@ -230,7 +250,9 @@ const sendgpt = async() => {
     const myform ={
       role: 2,
       content: messageContent.value,
-      chatId: chatnewStore.activeChatId
+      chatId: chatnewStore.activeChatId,
+      userId: userStore.user,
+      rag: chatnewStore.ragid
     }
     console.log(myform);
 
@@ -240,6 +262,14 @@ const sendgpt = async() => {
     }
 
     chatnewStore.messageList.value.push(form2)
+
+    if (chatnewStore.promptuid !== 0)
+    {
+    const resp = await request.get("/prompt/" + chatnewStore.promptuid);
+    myform.content=resp.data.systemPrompt +myform.content
+    console.log("myform",myform.content)
+    }
+
     await request.post("/message",myform).then(res => {
         console.log(res.data);
         ElMessage.success('发送成功');
@@ -253,7 +283,10 @@ const sendgpt = async() => {
     console.log(error);
     ElMessage.error(error.response.data.errMsg);
   } finally {
+    messageContent.value= "";
     isTalking.value = false;
+    // 关闭加载提示
+    loadingInstance.close();
   }
   //谈话
 };
